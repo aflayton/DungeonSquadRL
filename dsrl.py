@@ -6,7 +6,7 @@ currentRoom = None
 numberOfRooms = 3
 floorNumber = 1
 
-class Character:
+class Character(object):
 	hp = 15 #hit points
 	maxHp = 15
 	gold = 0
@@ -104,6 +104,17 @@ class Character:
 			print "You failed to cast."
 			
 	def shop(self):
+		bandage = {"Cost": 2,"Description": "Heals D4"}
+		salve = {"Cost": 4,"Description": "Heals D6"}
+		potion = {"Cost": 8,"Description": "Heals D12"}
+		hpUpgrade = {"Cost": 16,"Description": "+1 Max Hp"}
+		warriorUpgrade = {"Cost": 32,"Description": "+2 Warrior level"}
+		wizardUpgrade = {"Cost": 32,"Description": "+2 Wizard level"}
+		stuffUpgrade = {"Cost": 32,"Description": "+2 Stuff level"}
+		shopInventory = {"Bandage": bandage, "Salve": salve, "Potion": potion, "Hp Upgrade": hpUpgrade, "Warrior Upgrade": warriorUpgrade, "Wizard Upgrade": wizardUpgrade, "Stuff Upgrade": stuffUpgrade}
+		print "You can buy the following items:"
+		for k in shopInventory.keys():
+			print k + " - " + str(shopInventory[k])
 		item = raw_input("What would you like to buy?").lower()
 		if item == "bandage":
 			if self.gold >= 2: #2 is the cost
@@ -186,6 +197,8 @@ class Character:
 					print "You now have " + str(self.gold) + " gold left."
 					self.stuff[s] += 2
 					print "You now have a " + str(self.stuff[s]) + " level " + s + "."
+				else:
+					print "You can't afford that item."
 			else:
 				print "You don't have that stuff."
 				self.getInput()
@@ -201,11 +214,9 @@ class Character:
 		global currentRoom
 		global floorCleared
 		
-		if inCombat:
-			print str(currentRoom.monsters)
-		
 		i = raw_input("What will you do next? ").lower()
 		if i == "quit":
+			inCombat = False
 			floorCleared = True
 			forever = False
 		elif i[:5] == "enter":
@@ -263,8 +274,16 @@ class Character:
 		else:
 			print "Invalid Input. Try again."
 			self.getInput()
+			
+	def delete(self):
+		global floorCleared
+		global forever
+		print "You died."
+		inCombat = False
+		floorCleared = True
+		forever = False
 	
-class Floor:
+class Floor(object):
 	rooms = {}
 	def __init__(self):
 		global floorNumber
@@ -275,22 +294,21 @@ class Floor:
 			roomName = "Room"+str(i)
 			self.rooms[roomName] = Room()
 			self.rooms[roomName].name = roomName
-		print "You can enter one of these rooms: " + str(self.rooms.keys())
-			
-	def __del__(self):
+	
+	def delete(self):
 		global numberOfRooms
 		global floorNumber
 		print "You have cleared " + self.name + " of the Dungeon."
 		numberOfRooms += 2
 		floorNumber += 1
 			
-class Room:
-	monsters = {}
+class Room(object):
 	def __init__(self):
 		global floorNumber
+		self.monsters = {}
 		monsterCodes = [[1,2],[3,4,5],[6,7,8],[9,10,11],[12]]
 		maxRow = 4
-		for i in range(1, randint(1,4)):
+		for i in range(1, randint(2,5)):
 			if floorNumber <= maxRow:
 				randomRow = randint(0,floorNumber-1)
 			else:
@@ -337,13 +355,18 @@ class Room:
 			
 	def __str__(self):
 		return self.name
-		
-	def __del__(self):
+
+	def delete(self):
 		global inCombat
+		global currentRoom
 		print "You have cleared " + self.name + "!"
 		inCombat = False
+		currentRoom = None
 		
-class Monster:
+	def __getitem__(self, key):
+		return self.monsters[key]
+		
+class Monster(object):
 	hitThreshold = 4 #the number a monster has to roll to hit a player
 	armor = 0
 	
@@ -366,16 +389,12 @@ class Monster:
 		target.gold += self.goldValue
 		print "You now have " + str(target.gold) + " gold."
 
-	def __del__(self):
+	def delete(self):
 		global player
 		global availableTargets
-		try:
-			availableTargets.remove(self.id)
-		except:
-			pass
-		else:
-			print "The " + self.name + " dies!"
-			self.dropLoot(player)
+		availableTargets.remove(self.id)
+		print "The " + self.name + " dies!"
+		self.dropLoot(player)
 		
 	def __str__(self):
 		return self.name
@@ -466,10 +485,11 @@ class Boss(Monster):
 	hitDie = 12
 	goldValue = 0
 	
-	def __del__(self):
+	def delete(self):
 		global forever
 		global floorCleared
 		print "You win!"
+		inCombat = False
 		floorCleared = True
 		forever = False
 	
@@ -486,23 +506,40 @@ while forever:
 	floor = Floor()
 	floorCleared = False
 	while not floorCleared:
+		if not inCombat:
+			print str(floor.rooms.keys())
+			player.getInput()
+		
+		if inCombat:
+			print str(currentRoom.monsters)
+			player.getInput()
+		
 		#delete monster if it has no hp left
 		for r in floor.rooms.keys():
 			for m in floor.rooms[r].monsters.keys():
 				if floor.rooms[r].monsters[m].hp <= 0:
+					floor.rooms[r].monsters[m].delete()
 					del floor.rooms[r].monsters[m]
 					
 		#delete room if there are no monsters left
-		for i in floor.rooms.keys():
-			if len(floor.rooms[i].monsters) == 0:
-				del floor.rooms[i]
+		for r in floor.rooms.keys():
+			if len(floor.rooms[r].monsters) == 0:
+				floor.rooms[r].delete()
+				del floor.rooms[r]
 				
 		#delete floor if there are no rooms left
 		if len(floor.rooms) == 0:
+			floor.delete()
 			del floor
 			floorCleared = True
 			break
-			
-		player.getInput()
+		
+		#monsters' turn
+		if inCombat:
+			for monster in currentRoom.monsters.keys():
+				currentRoom[monster].attack(player)
+				if player.hp <= 0:
+					player.delete()
+					del player
 
 print "Game Over"
