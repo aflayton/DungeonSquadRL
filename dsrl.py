@@ -7,31 +7,25 @@ numberOfRooms = 3
 floorNumber = 1
 
 class Character(object):
-	hp = 15 #hit points
-	maxHp = 15
-	gold = 0
-	stuff = {}
-	skillValues = [8, 12] #these are the values that players can choose from for their skills (warrior, wizard)
-	
 	def __init__(self):
+		self.hp = 15 #hit points
+		self.maxHp = 15
+		self.gold = 0
+		self.stuff = {}
 		self.chooseSkills()
 		self.chooseStuff()
 	
-	def chooseWarrior(self):
-		self.warrior = input("What level would you like to have your Warrior skill be? " + str(self.skillValues) + ": ")
-		if self.warrior in self.skillValues:
-			self.skillValues.remove(self.warrior)
-		else:
-			self.chooseWarrior()
-	
-	def chooseWizard(self):
-		self.wizard = self.skillValues[0]
-		print "Your Wizard level is " + str(self.wizard)
-		
 	def chooseSkills(self):
-		self.chooseWarrior()
-		self.chooseWizard()
-		
+		i = raw_input("Warrior or Mage? ").lower()
+		if i == "warrior":
+			self.warrior = 12
+			self.mage = 8
+		elif i == "mage":
+			self.warrior = 8
+			self.mage = 12
+		else:
+			self.chooseSkills()
+
 	def chooseStuff(self):
 		availableStuff = ["Sword","Armor","Heal","Fireball"]
 		
@@ -115,7 +109,7 @@ class Character(object):
 		print "You can buy the following items:"
 		for k in shopInventory.keys():
 			print k + " - " + str(shopInventory[k])
-		item = raw_input("What would you like to buy?").lower()
+		item = raw_input("What would you like to buy? ").lower()
 		if item == "bandage":
 			if self.gold >= 2: #2 is the cost
 				print "You spend 2 gold."
@@ -189,7 +183,7 @@ class Character(object):
 				print "You can't afford that item."
 				self.getInput()
 		elif item == "stuff upgrade":
-			s = raw_input("What stuff would you like to upgrade?").capitalize()
+			s = raw_input("What stuff would you like to upgrade? ").capitalize()
 			if s in self.stuff.keys():
 				if self.gold >= 32:
 					print "You spend 32 gold."
