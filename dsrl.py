@@ -16,13 +16,13 @@ class Character(object):
 		self.chooseStuff()
 	
 	def chooseSkills(self):
-		i = raw_input("Warrior or Mage? ").lower()
+		i = raw_input("Warrior or Wizard? ").lower()
 		if i == "warrior":
 			self.warrior = 12
-			self.mage = 8
-		elif i == "mage":
+			self.wizard = 8
+		elif i == "wizard":
 			self.warrior = 8
-			self.mage = 12
+			self.wizard = 12
 		else:
 			self.chooseSkills()
 
